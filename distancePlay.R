@@ -26,6 +26,9 @@ JTRDistanceResults <- JTRDistance %>%
 # stats
 mean(JTRDistanceResults$rDistRank, na.rm = TRUE) # = 0.0752394
 
+mean(JTRDistanceResults$pDistRank < 0.05, na.rm = TRUE)
+# by FDR this is what we might see at chance level, so no significant effect can be found
+
 ggplot(JTRDistanceResults) + geom_histogram(aes(x = rDistRank), bins = 15) +
   theme_minimal() # optical inspection -> positive effect might be possible
 
@@ -39,17 +42,19 @@ ggplot(JTRDistanceResults) + geom_histogram(aes(x = rDistRank), bins = 15) +
 JTRDistanceResults %>% group_by(Season) %>% summarise(pWilcox = wilcox.test(rDistRank, alternative = "greater", na.rm = TRUE)$p.value) %>%
   mutate(sig = pWilcox < 0.05)
 
+ggplot(JTRDistance %>% filter(Season == 2016), aes(x = geoDist, y = relRank, color = TeamName)) + geom_point()
+
 # individual slope
 JTRDistanceSlope <- JTRDistance %>%
   group_by(Season, TeamName) %>%
-  do(lm.model = lm(relRank ~ geoDist, data = .))
+  do(lm.model = lm(relRank ~ log(geoDist), data = .))
 
 JTRDistanceSlope <- JTRDistanceSlope %>%
   summarise(Season = first(Season), TeamName = first(TeamName),
             slope = summary(lm.model)$coefficient[2,1],
             p.value = summary(lm.model)$coefficient[2,4])
 
-JTRDistanceSlope %>% filter(p.value < 0.05) %>% arrange(slope)
+JTRDistanceSlope %>% filter(p.value < 0.05 / n()) %>% arrange(slope)
 
 t.test(JTRDistanceSlope$slope)
 t.test((JTRDistanceSlope %>% filter(p.value < 0.05))$slope)
@@ -61,20 +66,22 @@ JTRReisemeister <- JTRDistance %>% group_by(TeamID, TeamName, Season) %>%
   arrange(Season, desc(totalDistance))
 
 for (s in unique(JTRReisemeister$Season)) {
-  ggplot(JTRReisemeister %>% filter(Season == s), aes(x = reorder(TeamName, totalDistance), y = totalDistance / 1000)) +
+  print(ggplot(JTRReisemeister %>% filter(Season == s), aes(x = reorder(TeamName, totalDistance), y = totalDistance / 1000)) +
     geom_bar(stat = "identity") +
     coord_flip() +
     # facet_wrap(~ Season, nrow = 1) +
     theme_minimal() +
     theme(panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank()) +
-    xlab(label = "") + ylab(label = paste("Reise-Distanz (km) im Jahr", toString(s), sep = " "))
+    xlab(label = "") + ylab(label = paste("Reise-Distanz (km) im Jahr", toString(s), sep = " ")))
   
-  ggplot(JTRDistance %>% mutate(totalDistance = sum(geoDist)) %>% filter(Season == s), aes(x = reorder(TeamName, totalDistance), y = geoDist / 1000, fill = TournamentID)) +
+  print(ggplot(JTRDistance %>% mutate(totalDistance = sum(geoDist)) %>% filter(Season == s), aes(x = reorder(TeamName, totalDistance), y = geoDist / 1000, fill = TournamentName)) +
     geom_bar(stat = "identity", position = "stack") +
     coord_flip() +
     # facet_wrap(~ Season, nrow = 1) +
+    scale_fill_discrete(h = c(165,195)) +
     theme_minimal() + guides(fill = FALSE) +
     theme(panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank()) +
-    xlab(label = "") + ylab(label = paste("Reise-Distanz (km) im Jahr", toString(s), sep = " "))
+    xlab(label = "") + ylab(label = paste("Reise-Distanz (km) im Jahr", toString(s), sep = " ")))
+  # + legend of fill
 }
 
