@@ -27,7 +27,8 @@ JTRDistanceResults <- JTRDistance %>%
 mean(JTRDistanceResults$rDistRank, na.rm = TRUE) # = 0.0752394
 
 mean(JTRDistanceResults$pDistRank < 0.05, na.rm = TRUE)
-# by FDR this is what we might see at chance level, so no significant effect can be found
+# bonferroni corrected
+JTRDistanceResults %>% filter(pDistRank < 0.05/JTRDistance %>% distinct(TeamID, Season) %>% nrow())
 
 ggplot(JTRDistanceResults) + geom_histogram(aes(x = rDistRank), bins = 15) +
   theme_minimal() # optical inspection -> positive effect might be possible
@@ -38,7 +39,6 @@ ggplot(JTRDistanceResults) + geom_histogram(aes(x = rDistRank), bins = 15) +
   facet_wrap(~ Season) +
   theme_minimal() # optical inspection -> it changes with time
 
-# z transform r?
 JTRDistanceResults %>% group_by(Season) %>% summarise(pWilcox = wilcox.test(rDistRank, alternative = "greater", na.rm = TRUE)$p.value) %>%
   mutate(sig = pWilcox < 0.05)
 
