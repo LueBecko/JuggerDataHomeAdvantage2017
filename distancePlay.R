@@ -66,13 +66,12 @@ JTRReisemeister <- JTRDistance %>% group_by(TeamID, TeamName, Season) %>%
   arrange(Season, desc(totalDistance))
 
 for (s in unique(JTRReisemeister$Season)) {
-  print(ggplot(JTRReisemeister %>% filter(Season == s), aes(x = reorder(TeamName, totalDistance), y = totalDistance / 1000)) +
-    geom_bar(stat = "identity") +
-    coord_flip() +
-    # facet_wrap(~ Season, nrow = 1) +
-    theme_minimal() +
-    theme(panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank()) +
-    xlab(label = "") + ylab(label = paste("Reise-Distanz (km) im Jahr", toString(s), sep = " ")))
+  print(ggplot(JTRReisemeister %>% filter(Season == s), aes(x = reorder(TeamName, nParticipations), y = nParticipations, fill = nParticipations)) +
+          geom_bar(stat = "identity") +
+          coord_flip() +
+          theme_minimal() + guides(fill = FALSE) +
+          theme(panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank()) +
+          xlab(label = "") + ylab(label = paste("Turnier-Teilnahemn im Jahr", toString(s), sep = " ")))
   
   print(ggplot(JTRDistance %>% mutate(totalDistance = sum(geoDist)) %>% filter(Season == s), aes(x = reorder(TeamName, totalDistance), y = geoDist / 1000, fill = TournamentName)) +
     geom_bar(stat = "identity", position = "stack") +
@@ -82,6 +81,5 @@ for (s in unique(JTRReisemeister$Season)) {
     theme_minimal() + guides(fill = FALSE) +
     theme(panel.grid.minor.y = element_blank(), panel.grid.major.y = element_blank()) +
     xlab(label = "") + ylab(label = paste("Reise-Distanz (km) im Jahr", toString(s), sep = " ")))
-  # + legend of fill
 }
 
